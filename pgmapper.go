@@ -58,8 +58,9 @@ func New(config Config) (*Mapper, error) {
 	return &Mapper{db}, nil
 }
 
-func (mapper *Mapper) ApplyPatch(id string, patch *jsonpatch.Patch, compiler jsonpatch.PatchCompiler) error {
-	commands, err := compiler.Compile(id, patch)
+func (mapper *Mapper) ApplyPatch(id, userId string, patch *jsonpatch.Patch, compiler jsonpatch.PatchCompiler) error {
+	options := map[string]interface{}{"id": id, "userId": userId}
+	commands, err := compiler.Compile(patch, options)
 	if err != nil {
 		return err
 	}
