@@ -6,10 +6,11 @@ import (
 	"reflect"
 	"strings"
 
+	_ "github.com/lib/pq"
 	"github.com/richterrettich/jsonpatch"
 )
 
-type PgMapper struct {
+type Mapper struct {
 	db *sql.DB
 }
 
@@ -49,15 +50,15 @@ func (c Config) toString() string {
 	return connectionString
 }
 
-func New(config Config) (*PgMapper, error) {
+func New(config Config) (*Mapper, error) {
 	db, err := sql.Open("postgres", config.toString())
 	if err != nil {
 		return nil, err
 	}
-	return &PgMapper{db}, nil
+	return &Mapper{db}, nil
 }
 
-func (mapper *PgMapper) ApplyPatch(id string, patch *jsonpatch.Patch, compiler jsonpatch.PatchCompiler) error {
+func (mapper *Mapper) ApplyPatch(id string, patch *jsonpatch.Patch, compiler jsonpatch.PatchCompiler) error {
 	commands, err := compiler.Compile(id, patch)
 	if err != nil {
 		return err
@@ -87,7 +88,7 @@ func (mapper *PgMapper) ApplyPatch(id string, patch *jsonpatch.Patch, compiler j
 	return tx.Commit()
 }
 
-func (t *PgMapper) QueryIntoBytes(query string, params ...interface{}) ([]byte, error) {
+func (t *Mapper) QueryIntoBytes(query string, params ...interface{}) ([]byte, error) {
 	stmt, parsedParams := prepare(query, params...)
 	row, err := t.db.Query(stmt, parsedParams...)
 	if err != nil {
@@ -104,6 +105,15 @@ func (t *PgMapper) QueryIntoBytes(query string, params ...interface{}) ([]byte, 
 		result = append(result, tmp...)
 	}
 	return result, nil
+}
+
+func (t *Mapper) Execute(query string, params ...interface{}) error {
+	stmt, parsedParams := prepare(query, params...)
+	_, err := t.db.Exec(stmt, parsedParams...)
+	return err
+}
+func (t *Mapper) ExecuteRaw(query string, params ...interface{}) (sql.Result, error) {
+	return t.db.Exec(query, params...)
 }
 
 func prepare(stmt string, values ...interface{}) (string, []interface{}) {
