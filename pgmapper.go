@@ -3,9 +3,8 @@ package pgmapper
 import (
 	"database/sql"
 	"fmt"
-	"reflect"
-	"strings"
 
+	"github.com/InteractiveLecture/pgmapper/pgutil"
 	_ "github.com/lib/pq"
 	"github.com/richterrettich/jsonpatch"
 )
@@ -64,23 +63,25 @@ func (mapper *Mapper) ApplyPatch(id, userId string, patch *jsonpatch.Patch, comp
 	if err != nil {
 		return err
 	}
+	results := make([]interface{}, 0)
 	tx, err := mapper.db.Begin()
 	for _, com := range commands.Commands {
-		err = com.ExecuteBefore(tx)
+		res, err := com.ExecuteBefore(tx)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		results = append(results, res)
+	}
+	for i, com := range commands.Commands {
+		results[i], err = com.ExecuteMain(tx, results[i])
 		if err != nil {
 			tx.Rollback()
 			return err
 		}
 	}
-	for _, com := range commands.Commands {
-		err = com.ExecuteMain(tx)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-	for _, com := range commands.Commands {
-		err = com.ExecuteAfter(tx)
+	for i, com := range commands.Commands {
+		results[i], err = com.ExecuteAfter(tx, results[i])
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -90,7 +91,7 @@ func (mapper *Mapper) ApplyPatch(id, userId string, patch *jsonpatch.Patch, comp
 }
 
 func (t *Mapper) QueryIntoBytes(query string, params ...interface{}) ([]byte, error) {
-	stmt, parsedParams := prepare(query, params...)
+	stmt, parsedParams := pgutil.Prepare(query, params...)
 	row, err := t.db.Query(stmt, parsedParams...)
 	if err != nil {
 		return nil, err
@@ -109,33 +110,10 @@ func (t *Mapper) QueryIntoBytes(query string, params ...interface{}) ([]byte, er
 }
 
 func (t *Mapper) Execute(query string, params ...interface{}) error {
-	stmt, parsedParams := prepare(query, params...)
+	stmt, parsedParams := pgutil.Prepare(query, params...)
 	_, err := t.db.Exec(stmt, parsedParams...)
 	return err
 }
 func (t *Mapper) ExecuteRaw(query string, params ...interface{}) (sql.Result, error) {
 	return t.db.Exec(query, params...)
-}
-
-func prepare(stmt string, values ...interface{}) (string, []interface{}) {
-	parametersString := ""
-	var parameters = make([]interface{}, 0)
-	currentIndex := 1
-	for _, v := range values {
-		val := reflect.ValueOf(v)
-		if val.Kind() == reflect.Slice {
-			for i := 0; i < val.Len(); i++ {
-				inval := val.Index(i)
-				parameters = append(parameters, inval.Interface())
-				parametersString = fmt.Sprintf("%s,$%d", parametersString, currentIndex)
-				currentIndex = currentIndex + 1
-			}
-		} else {
-			parameters = append(parameters, v)
-			parametersString = fmt.Sprintf("%s,$%d", parametersString, currentIndex)
-			currentIndex = currentIndex + 1
-		}
-	}
-	stmt = fmt.Sprintf(stmt, strings.Trim(parametersString, ","))
-	return stmt, parameters
 }
