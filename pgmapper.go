@@ -91,8 +91,7 @@ func (mapper *Mapper) ApplyPatch(id, userId string, patch *jsonpatch.Patch, comp
 }
 
 func (t *Mapper) QueryIntoBytes(query string, params ...interface{}) ([]byte, error) {
-	stmt, parsedParams := pgutil.Prepare(query, params...)
-	row, err := t.db.Query(stmt, parsedParams...)
+	row, err := t.db.Query(query, params...)
 	if err != nil {
 		return nil, err
 	}
@@ -107,6 +106,11 @@ func (t *Mapper) QueryIntoBytes(query string, params ...interface{}) ([]byte, er
 		result = append(result, tmp...)
 	}
 	return result, nil
+}
+
+func (t *Mapper) PreparedQueryIntoBytes(query string, params ...interface{}) ([]byte, error) {
+	stmt, parsedParams := pgutil.Prepare(query, params...)
+	return t.QueryIntoBytes(stmt, parsedParams...)
 }
 
 func (t *Mapper) Execute(query string, params ...interface{}) error {
