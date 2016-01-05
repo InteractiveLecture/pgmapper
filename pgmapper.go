@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/InteractiveLecture/jsonpatch"
 	"github.com/InteractiveLecture/pgmapper/pgutil"
 	_ "github.com/lib/pq"
-	"github.com/richterrettich/jsonpatch"
 )
 
 type Mapper struct {
