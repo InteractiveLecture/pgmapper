@@ -5,7 +5,7 @@ go:
   - 1.5
 
 install:
-  - go get github.com/richterrettich/jsonpatch
+  - go get github.com/InteractiveLecture/jsonpatch
   - go get github.com/lib/pq
 
 script:
