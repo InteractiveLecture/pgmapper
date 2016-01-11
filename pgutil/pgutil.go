@@ -2,6 +2,7 @@ package pgutil
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 )
@@ -26,5 +27,8 @@ func Prepare(stmt string, values ...interface{}) (string, []interface{}) {
 		}
 	}
 	stmt = fmt.Sprintf(stmt, strings.Trim(parametersString, ","))
+	log.Println("statement is ", stmt)
+	log.Println("parameters are ", parameters)
+
 	return stmt, parameters
 }
