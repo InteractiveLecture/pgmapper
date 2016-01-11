@@ -1,0 +1,12 @@
+sudo: false
+
+language: go
+go:
+  - 1.5
+
+install:
+  - go get github.com/richterrettich/jsonpatch
+  - go get github.com/lib/pq
+
+script:
+  - cd pgutil && go install && cd .. && go build && go install
