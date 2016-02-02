@@ -126,3 +126,11 @@ func (t *Mapper) Execute(query string, params ...interface{}) error {
 func (t *Mapper) ExecuteRaw(query string, params ...interface{}) (sql.Result, error) {
 	return t.db.Exec(query, params...)
 }
+
+func (t *Mapper) Query(query string, params ...interface{}) (*sql.Rows, error) {
+	return t.db.Query(query, params...)
+}
+
+func (t *Mapper) QueryRow(query string, params ...interface{}) *sql.Row {
+	return t.db.QueryRow(query, params...)
+}
